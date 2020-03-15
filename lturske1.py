@@ -91,11 +91,15 @@ def apply_vars(action, actual, to_change):
     return temp
 
 
-def forward_planner(start_state, goal, actions, plan=[], explored=[], debug=False):
-
+def forward_planner(start_state, goal, actions, debug=False, plan=[], explored=[]):
+    if debug:
+        print(start_state)
     viable_actions = []
+    # Base Case, if you are at the goal, return the plan
     if goal == start_state:
         return plan
+    # For each action get all the existance variables and apply all the combinations to the specific action,
+    # this is using unification.
     for key in list(actions.keys()):
         variables = {}
         for cond in actions[key]['conditions']:
@@ -116,9 +120,14 @@ def forward_planner(start_state, goal, actions, plan=[], explored=[], debug=Fals
                 para_two_name = actions[key]['action'][2]
                 for param_three in variables[actions[key]['action'][3]]:
                     para_three_name = actions[key]['action'][3]
-                    if check_all_conds(start_state, actions[key]['conditions'], (para_one_name, param_one), (para_two_name, param_two), (para_three_name, param_three)):
+                    if check_all_conds(start_state,
+                                       actions[key]['conditions'],
+                                       (para_one_name, param_one),
+                                       (para_two_name, param_two),
+                                       (para_three_name, param_three)):
                         viable_actions.append([actions[key]['action'][0], param_one, param_two, param_three])
 
+    # For every viable action that you found in the previous loop, attepmt to see if that is the correct path
     for action in viable_actions:
         add = apply_vars(actions[action[0]]['action'], action, actions[action[0]]['add'])
         delete = apply_vars(actions[action[0]]['action'], action, actions[action[0]]['delete'])
@@ -127,12 +136,12 @@ def forward_planner(start_state, goal, actions, plan=[], explored=[], debug=Fals
             continue
         explored.append(new_state)
         plan.append(action)
-        if forward_planner(new_state, goal, actions, plan, explored, debug) is not False:
+        if forward_planner(new_state, goal, actions, debug,  plan, explored) is not False:
             return plan
         plan.remove(action)
     return False
 
-
+# parse all the data so that you can work with it
 parsed_start_state = []
 for ele in start_state:
     parsed_start_state.append(parse(ele))
